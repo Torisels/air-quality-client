@@ -1,4 +1,4 @@
-# air-quality-client
+# GIOŚ Air quality index client
 Project for PIPR as an obligatory element to pass this subject.
 
 
