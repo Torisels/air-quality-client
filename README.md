@@ -2,10 +2,10 @@
 Project for PIPR as an obligatory element to pass this subject.
 
 
-### Subject:
-Pobieranie danych o obecnym i historycznym stanie jakości powietrza ze stacji pomiarowych GIOŚ za pomocą [interfejsów API] (https://powietrze.gios.gov.pl/pjp/content/api) i prezentowanie ich na wykresie.
+## Subject:
+Pobieranie danych o obecnym i historycznym stanie jakości powietrza ze stacji pomiarowych GIOŚ za pomocą [interfejsów API](https://powietrze.gios.gov.pl/pjp/content/api) i prezentowanie ich na wykresie.
 
-#Funkcjonalność
+### Funkcjonalność
  * wyświetlanie listy wszystkich dostępnych stacji pomiarowych
  * wyświetlanie listy wszystkich stanowisk pomiarowych dla danej stacji
  * pobieranie wybranych (oraz wszystkich) danych pomiarowych dla wybranej stacji
