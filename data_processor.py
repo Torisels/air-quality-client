@@ -1,6 +1,4 @@
 import datetime
-from api_manager import ApiManager, ApiError
-
 
 class DataProcessingError(Exception):
     pass
@@ -22,7 +20,8 @@ class DataProcessor:
                                    str(city["commune"]["districtName"]).title(),
                                    str(city["commune"]["provinceName"]).title()))
             except (KeyError, ValueError) as e:
-                print(f"Could't parse city data for {station}")
+                raise DataProcessingError(f"Could't parse city data for {station}") from e
+
 
         return cities
 
@@ -39,7 +38,7 @@ class DataProcessor:
                                  city_id,
                                  str(station["addressStreet"])))
             except (KeyError, ValueError) as e:
-                print(f"Could't parse station data for {station}")
+                raise DataProcessingError(f"Could't parse station data for {station}") from e
         return stations
 
     @classmethod
@@ -64,27 +63,16 @@ class DataProcessor:
     def fill_data(cls, data, sensor_id):
         try:
             param_code = data["key"]
-        except KeyError as e:
-            raise DataProcessingError(f"Could't parse data for {sensor_id}. Data has no key") from e
-
-        insert_data = []
-        for value in data["values"]:
-            insert_data.append((sensor_id,
-                                param_code,
-                                int(datetime.datetime.strptime(value["date"], cls.API_DATE_FORMAT).timestamp()),
-                                str(value["value"])
-                                ))
+            insert_data = []
+            for value in data["values"]:
+                insert_data.append((sensor_id,
+                                    param_code,
+                                    int(datetime.datetime.strptime(value["date"], cls.API_DATE_FORMAT).timestamp()),
+                                    str(value["value"])
+                                    ))
+        except (ValueError, KeyError) as e:
+            raise DataProcessingError(f"Could't process data for {sensor_id}.") from e
         return insert_data
-
-    @classmethod
-    def insert_stations(cls):
-        data = ApiManager.get_from_url(ApiManager.URL_DATA, 92)
-        # print(cls.fill_cities(data))
-        # print(cls.fill_stations(data))
-        print(cls.fill_data(data, 92))
-
-
-
 
 
 if __name__ == "__main__":

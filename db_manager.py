@@ -110,7 +110,6 @@ class DbManager:
         # generate question marks with commas and delete last comma
         values_placeholders = (len(data[0]) * "?,")[:-1]
         # reformat the data to the list of tuples
-        # data_to_insert = [tuple(x.values()) for x in data]
         query = f"INSERT {replace} INTO {table_name} VALUES ({values_placeholders})"
         self.run_sql(query, data)
 
@@ -123,6 +122,7 @@ class DbManager:
         sql = "SELECT timestamp, endpoint from request_history WHERE endpoint=? ORDER BY id DESC LIMIT 1"
         data = (endpoint,)
         return self.run_sql_select(sql, data)[0]
+
 
 if __name__ == "__main__":
     db = DbManager.get_instance()
