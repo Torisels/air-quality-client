@@ -1,34 +1,45 @@
 import datetime
-from api_manager import ApiManager, ApiException
+from api_manager import ApiManager, ApiError
 
 
-class DataManager:
+class DataProcessingError(Exception):
+    pass
+
+
+class DataProcessor:
     API_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
     @classmethod
-    def fill_cities(cls, data):
+    def parse_cities(cls, data):
         cities = []
         for station in data:
-            city = station["city"]
-            if city:
-                cities.append((int(city["id"]),
-                               city["name"],
-                               city["commune"]["communeName"],
-                               city["commune"]["districtName"],
-                               city["commune"]["provinceName"]))
+            try:
+                city = station["city"]
+                if city:
+                    cities.append((int(city["id"]),
+                                   str(city["name"]).title(),
+                                   str(city["commune"]["communeName"]).title(),
+                                   str(city["commune"]["districtName"]).title(),
+                                   str(city["commune"]["provinceName"]).title()))
+            except (KeyError, ValueError) as e:
+                print(f"Could't parse city data for {station}")
+
         return cities
 
     @classmethod
-    def fill_stations(cls, data):
+    def parse_stations(cls, data):
         stations = []
         for station in data:
-            city_id = None if station["city"] is None else int(station["city"]["id"])
-            stations.append((int(station["id"]),
-                             station["stationName"],
-                             station["gegrLat"],
-                             station["gegrLon"],
-                             city_id,
-                             station["addressStreet"]))
+            try:
+                city_id = None if station["city"] is None else int(station["city"]["id"])
+                stations.append((int(station["id"]),
+                                 str(station["stationName"]),
+                                 str(station["gegrLat"]),
+                                 str(station["gegrLon"]),
+                                 city_id,
+                                 str(station["addressStreet"])))
+            except (KeyError, ValueError) as e:
+                print(f"Could't parse station data for {station}")
         return stations
 
     @classmethod
@@ -51,13 +62,17 @@ class DataManager:
 
     @classmethod
     def fill_data(cls, data, sensor_id):
-        param_code = data["key"]
+        try:
+            param_code = data["key"]
+        except KeyError as e:
+            raise DataProcessingError(f"Could't parse data for {sensor_id}. Data has no key") from e
+
         insert_data = []
         for value in data["values"]:
             insert_data.append((sensor_id,
                                 param_code,
                                 int(datetime.datetime.strptime(value["date"], cls.API_DATE_FORMAT).timestamp()),
-                                value["value"]
+                                str(value["value"])
                                 ))
         return insert_data
 
@@ -69,5 +84,8 @@ class DataManager:
         print(cls.fill_data(data, 92))
 
 
+
+
+
 if __name__ == "__main__":
-    DataManager.insert_stations()
+    pass

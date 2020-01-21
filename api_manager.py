@@ -1,7 +1,7 @@
 import requests
+from db_manager import DbManager
 
-
-class ApiException(Exception):
+class ApiError(Exception):
     pass
 
 
@@ -13,17 +13,18 @@ class ApiManager:
     URL_AIR_QUALITY_INDEX = "/aqindex/getIndex"
 
     @classmethod
-    def call_api(cls, url):
+    def __call_api(cls, url):
         """
-        Gets all stations from /station/findALl endpoint of GIOŚ API. Returns json parsed to dictionary
+        Gets all information from specified url. Returns dict from json from response.
 
         :rtype: dict
         """
         try:
-            response = requests.get(url)
+            response = requests.get(cls.URL_BASE+url)
             response.raise_for_status()
+            DbManager.get_instance().insert_request_into_history(url)
         except requests.exceptions.RequestException as e:
-            raise ApiException(f"Could not get data from GIOŚ API.") from e
+            raise ApiError("Could not get data from GIOŚ API.") from e
         return response.json()
 
     @classmethod
@@ -38,11 +39,11 @@ class ApiManager:
         """
         # check if url belongs to ApiManager class (also deals with empty url)
         if url not in ApiManager.__dict__.values():
-            raise ValueError("Provide correct url!")
+            raise ApiError("Provide correct url!")
 
-        if type(parameter) is not int and url != cls.URL_STATIONS:
-            raise ValueError("Parameter has to be an integer and cannot be None!")
+        if type(parameter) is not int and url is not cls.URL_STATIONS:
+            raise ApiError("Parameter has to be an integer and cannot be None!")
 
         parameter = "" if parameter is None else parameter
-        target_url = f"{cls.URL_BASE}{url}/{parameter}"
-        return cls.call_api(target_url)
+        target_url = f"{url}/{parameter}"
+        return cls.__call_api(target_url)

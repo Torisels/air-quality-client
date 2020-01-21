@@ -1,9 +1,10 @@
 import sqlite3
 from sqlite3 import Error as sqliteError
 from sqlite3 import OperationalError
+import datetime
 
 
-class DbManagerException(Exception):
+class DbManagerError(Exception):
     pass
 
 
@@ -12,12 +13,15 @@ class DbManager:
 
     @classmethod
     def get_instance(cls):
+        """
+        Implementation of singleton pattern. Use this to get instance of DbManager.
+        :rtype: DbManager
+        """
         if cls.__INSTANCE is None:
             cls.__INSTANCE = DbManager()
         return cls.__INSTANCE
 
-    DB_PATH = "C:/Users/Gustaw/source/repos/air-quality-index/data.db"
-
+    DB_PATH = "C:/Users/Gustaw/source/repos/air-quality-index/data.db"  # TODO: change to relative path
     SQL_SETUP_DATABASE = "PRAGMA foreign_keys = ON;"
 
     SQL_CREATE_TABLE_CITIES = """CREATE TABLE IF NOT EXISTS cities(
@@ -57,7 +61,7 @@ class DbManager:
         try:
             connection = sqlite3.connect(self.DB_PATH)
         except sqliteError as e:
-            print(e)  # Todo: add logging
+            raise DbManagerError("Application was unable to connect") from e
         self.connection = connection  # If everything went ok => set instance variable
         self.__set_up()  # Create all needed tables.
 
@@ -66,22 +70,29 @@ class DbManager:
         Runs sql query. Does not return anything and can't be used for SELECT statement.
         Can be used for inserts also but only with parametrized queries (`?` as a placeholder).
         :type sql: str
-        :type data: list
+        :type data: any
         :param sql: SQL code to run. Has to have `?` as a placeholder for INSERT queries.
         :param data: data for insert as a list of tuples.
-
         """
         try:
             cursor = self.connection.cursor()
             if data is None:
                 cursor.execute(sql)
-            elif len(data) == 1:
-                cursor.execute(sql, data[0])
+            elif type(data) == tuple:
+                cursor.execute(sql, data)
             else:
                 cursor.executemany(sql, data)
             self.connection.commit()
         except sqliteError as e:
-            raise DbManagerException from e
+            raise DbManagerError("Error when performing sql insert query") from e
+
+    def run_sql_select(self, sql, data=None):
+        try:
+            cursor = self.connection.cursor()
+            cursor.execute(sql, data)
+            return cursor.fetchall()
+        except sqliteError as e:
+            raise DbManagerError("Error when performing sql select query") from e
 
     def __set_up(self):
         """
@@ -94,17 +105,26 @@ class DbManager:
         self.run_sql(self.SQL_CREATE_TABLE_SENSORS)
         self.run_sql(self.SQL_CREATE_TABLE_DATA)
 
-    def insert_from_dict(self, table_name, data, replace=None):
-        replace = "" if replace is None else "OR REPLACE"
+    def insert_from_list(self, table_name, data, replace=False):
+        replace = "" if not replace else "OR REPLACE"
         # generate question marks with commas and delete last comma
-        values_placeholders = (len(data[0].keys()) * "?,")[:-1]
+        values_placeholders = (len(data[0]) * "?,")[:-1]
         # reformat the data to the list of tuples
-        data_to_insert = [tuple(x.values()) for x in data]
+        # data_to_insert = [tuple(x.values()) for x in data]
         query = f"INSERT {replace} INTO {table_name} VALUES ({values_placeholders})"
-        self.run_sql(query, data_to_insert)
+        self.run_sql(query, data)
 
+    def insert_request_into_history(self, endpoint: str):
+        timestamp = int(datetime.datetime.now().timestamp())
+        sql = f"INSERT INTO request_history (endpoint, timestamp) VALUES (?,?)"
+        self.run_sql(sql, (endpoint, timestamp))
+
+    def get_last_request(self, endpoint: str):
+        sql = "SELECT timestamp, endpoint from request_history WHERE endpoint=? ORDER BY id DESC LIMIT 1"
+        data = (endpoint,)
+        return self.run_sql_select(sql, data)[0]
 
 if __name__ == "__main__":
     db = DbManager.get_instance()
-    db.run_sql("SELECT * FROM cities")
+    result = db.get_last_request("/station/findAll/")
     print("X")
