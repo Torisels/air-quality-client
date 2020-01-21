@@ -1,5 +1,6 @@
 import datetime
 
+
 class DataProcessingError(Exception):
     pass
 
@@ -21,7 +22,6 @@ class DataProcessor:
                                    str(city["commune"]["provinceName"]).title()))
             except (KeyError, ValueError) as e:
                 raise DataProcessingError(f"Could't parse city data for {station}") from e
-
 
         return cities
 
@@ -45,11 +45,14 @@ class DataProcessor:
     def fill_params(cls, data):
         params = []
         for sensor in data:
-            param = sensor["param"]
-            params.append((int(param["idParam"]),
-                           param["paramName"],
-                           param["paramFormula"],
-                           param["paramCode"]))
+            try:
+                param = sensor["param"]
+                params.append((int(param["idParam"]),
+                               str(param["paramName"]),
+                               str(param["paramFormula"]),
+                               str(param["paramCode"])))
+            except (KeyError, ValueError) as e:
+                raise DataProcessingError(f"Could't parse station data for {sensor}") from e
 
     @classmethod
     def fill_sensors(cls, data):
