@@ -55,9 +55,9 @@ class DataProcessor:
         return sensors
 
     @classmethod
-    def fill_data(cls, data, sensor_id):
+    def parse_data(cls, data, sensor_id):
         try:
-            param_code = data["key"]
+            param_code = str(data["key"])
             insert_data = []
             for value in data["values"]:
                 insert_data.append((sensor_id,

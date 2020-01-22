@@ -69,6 +69,9 @@ class ApiManager:
     @classmethod
     def validate_request(cls, url):
         request_timestamp = DbManager.get_instance().get_last_request(url)
-        valid = datetime.datetime.now().timestamp() - request_timestamp >= 600
+        if request_timestamp:
+            valid = datetime.datetime.now().timestamp() - request_timestamp >= 600
+        else:
+            valid = True
         logger.info(f"Request made for url: {url} is {'valid' if valid else 'invalid'}")
         return valid

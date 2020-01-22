@@ -124,10 +124,11 @@ class DbManager:
         for sql in self.SET_UP_SQL.values():
             self.run_sql(sql)
 
-    def insert_from_list(self, table_name, data, replace=False):
+    def insert_from_list(self, table_name, data, replace=False, columns=False):
         """
         Inserts data from a list of tuple(s). Use replace=True to use SQL's INSERT OR REPLACE. Does not return anything
 
+        :param columns: Union[Bool, list]
         :param table_name: str
         :param data: list
         :param replace: bool
@@ -136,7 +137,9 @@ class DbManager:
         # generate question marks with commas and delete last comma
         values_placeholders = (len(data[0]) * "?,")[:-1]
         # reformat the data to the list of tuples
-        query = f"INSERT {replace} INTO {table_name} VALUES ({values_placeholders})"
+        columns = "" if not columns else f"({','.join(columns)})"
+
+        query = f"INSERT {replace} INTO {table_name} {columns} VALUES ({values_placeholders})"
         self.run_sql(query, data)
 
     def insert_request_into_history(self, endpoint):
@@ -147,6 +150,11 @@ class DbManager:
         timestamp = int(datetime.datetime.now().timestamp())
         sql = f"INSERT INTO request_history (endpoint, timestamp) VALUES (?,?)"
         self.run_sql(sql, [(endpoint, timestamp)])
+
+    def generic_single_parameters_select(self, sql, data):
+        data = (data,)
+        res = self.run_sql_select(sql, data)
+        return None if len(res) == 0 else res
 
     def get_last_request(self, endpoint):
         """
@@ -160,6 +168,30 @@ class DbManager:
         res = self.run_sql_select(sql, data)
         return None if len(res) == 0 else res[0][0]
 
+    def get_all_sensors(self, station_id):
+        sql = "SELECT id, param FROM sensors WHERE station_id=?"
+        data = (station_id,)
+        res = self.run_sql_select(sql, data)
+        return None if len(res) == 0 else res
+
+    def insert_api_data(self, data):
+        cols = ["sensor_id", "param_code", "date", "value"]
+        self.insert_from_list("data", data, columns=cols)
+
+    def get_data(self, sensor_id):
+        sql = "SELECT date, value FROM data where sensor_id = ?"
+        data = (sensor_id,)
+        res = self.run_sql_select(sql, data)
+        return None if len(res) == 0 else res
+
+    def get_all_data_for_station(self, station_id):
+        sql = "SELECT param_code, date, value " \
+              "FROM data LEFT JOIN sensors s on data.sensor_id = s.id WHERE s.station_id = ?"
+        return self.generic_single_parameters_select(sql, station_id)
+
+    def station_name_by_id(self, station_id):
+        sql = "SELECT name FROM stations WHERE id=?"
+        return self.generic_single_parameters_select(sql, station_id)
 
 if __name__ == "__main__":
     db = DbManager.get_instance()
