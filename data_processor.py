@@ -6,6 +6,7 @@ class DataProcessingError(Exception):
 
 
 class DataProcessor:
+    """It is responsible for processing data from the API to suitable format for database."""
     API_DATE_FORMAT = "%Y-%m-%d %H:%M:%S"
 
     @classmethod
@@ -17,7 +18,7 @@ class DataProcessor:
                 if city:
                     cities.append((int(city["id"]),
                                    str(city["name"]).title(),
-                                   str(city["commune"]["communeName"]).title(),
+                                   str(city["commune"]["communeName"]).title(), # uppercase first letter
                                    str(city["commune"]["districtName"]).title(),
                                    str(city["commune"]["provinceName"]).title()))
             except (KeyError, ValueError) as e:
@@ -42,25 +43,16 @@ class DataProcessor:
         return stations
 
     @classmethod
-    def fill_params(cls, data):
-        params = []
-        for sensor in data:
-            try:
-                param = sensor["param"]
-                params.append((int(param["idParam"]),
-                               str(param["paramName"]),
-                               str(param["paramFormula"]),
-                               str(param["paramCode"])))
-            except (KeyError, ValueError) as e:
-                raise DataProcessingError(f"Could't parse station data for {sensor}") from e
-
-    @classmethod
-    def fill_sensors(cls, data):
+    def parse_sensors(cls, data):
         sensors = []
         for sensor in data:
-            sensors.append((int(sensor["id"]),
-                            int(sensor["stationId"]),
-                            int(sensor["param"]["idParam"])))
+            try:
+                sensors.append((int(sensor["id"]),
+                                int(sensor["stationId"]),
+                                str(sensor["param"]["paramCode"])))
+            except (KeyError, ValueError) as e:
+                raise DataProcessingError(f"Could't parse sensor data for {sensor}") from e
+        return sensors
 
     @classmethod
     def fill_data(cls, data, sensor_id):

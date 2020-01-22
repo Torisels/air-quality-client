@@ -1,8 +1,8 @@
-# GIOŚ Air quality index client
-Project for PIPR as an obligatory element to pass this subject.
+# GIOŚ Jakość powietrza
+Projekt z przedmiotu PIPR jako obligatoryjny element zaliczenia.
 
 
-## Subject:
+## Temat:
 Pobieranie danych o obecnym i historycznym stanie jakości powietrza ze stacji pomiarowych GIOŚ za pomocą [interfejsów API](https://powietrze.gios.gov.pl/pjp/content/api) i prezentowanie ich na wykresie.
 
 ### Funkcjonalność

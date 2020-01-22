@@ -10,15 +10,25 @@ handlers:
     level: DEBUG
     formatter: main
 
-  file_handler:
+  file_handler_data_flow:
     class: logging.FileHandler
     level: DEBUG
     filename: data.log
     formatter: main
 
+  file_handler_api_calls:
+    class: logging.FileHandler
+    level: DEBUG
+    filename: api.log
+    formatter: main
+
 loggers:
   data_flow:
     level: DEBUG
-    handlers: [console, file_handler]
+    handlers: [console, file_handler_data_flow]
+
+  api_flow:
+    level: DEBUG
+    handlers: [file_handler_api_calls]
 root:
   handlers: []

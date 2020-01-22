@@ -49,9 +49,10 @@ class DbManager:
         SQL_CREATE_TABLE_SENSORS="""CREATE TABLE IF NOT EXISTS sensors(
                                  id integer PRIMARY KEY,
                                  station_id integer NOT NULL REFERENCES stations(id) ON UPDATE CASCADE,
-                                 param integer NOT NULL REFERENCES params(code) ON UPDATE CASCADE);""",
+                                 param TEXT NOT NULL REFERENCES params(code) ON UPDATE CASCADE);""",
 
         SQL_CREATE_TABLE_DATA="""CREATE TABLE IF NOT EXISTS data(
+                              id integer PRIMARY KEY,
                               sensor_id integer REFERENCES sensors(id) ON UPDATE CASCADE,
                               param_code text REFERENCES params(code) ON UPDATE CASCADE,
                               date integer NOT NULL,
@@ -145,7 +146,7 @@ class DbManager:
         """
         timestamp = int(datetime.datetime.now().timestamp())
         sql = f"INSERT INTO request_history (endpoint, timestamp) VALUES (?,?)"
-        self.run_sql(sql, (endpoint, timestamp))
+        self.run_sql(sql, [(endpoint, timestamp)])
 
     def get_last_request(self, endpoint):
         """
@@ -154,10 +155,10 @@ class DbManager:
         :param endpoint: str
         :return: any
         """
-        sql = "SELECT timestamp, endpoint from request_history WHERE endpoint=? ORDER BY id DESC LIMIT 1"
+        sql = "SELECT timestamp from request_history WHERE endpoint=? ORDER BY id DESC LIMIT 1"
         data = (endpoint,)
         res = self.run_sql_select(sql, data)
-        return None if len(res) == 0 else res[0]
+        return None if len(res) == 0 else res[0][0]
 
 
 if __name__ == "__main__":
