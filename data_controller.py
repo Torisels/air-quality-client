@@ -58,7 +58,7 @@ class DataController:
                     logger.error(
                         f"Data for {sensor} is invali. Sensor key: {sensor_key} vs APi key {raw_sensor_data['key']}")
                 else:
-                    parsed_data = DataProcessor.parse_data(raw_sensor_data, sensor_id)
+                    parsed_data = DataProcessor.parse_sensor_data(raw_sensor_data, sensor_id)
                     DbManager.get_instance().insert_api_data(parsed_data)
 
     @classmethod

@@ -8,6 +8,6 @@ def test_parse_data():
     with open("test_data_data.json") as f:
         data = json.load(f)
 
-    result = DataProcessor.parse_data(data, 92)
+    result = DataProcessor.parse_sensor_data(data, 92)
     assert type(result) == list
     assert len(result) > 1

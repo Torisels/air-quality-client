@@ -22,6 +22,13 @@ handlers:
     filename: api.log
     formatter: main
 
+  file_handler_data_parsing:
+    class: logging.FileHandler
+    level: DEBUG
+    filename: data_parsing.log
+    formatter: main
+
+
 loggers:
   data_flow:
     level: DEBUG
@@ -30,5 +37,9 @@ loggers:
   api_flow:
     level: DEBUG
     handlers: [file_handler_api_calls]
+
+  data_parsing:
+    level: DEBUG
+    handlers: [file_handler_data_parsing]
 root:
   handlers: []
