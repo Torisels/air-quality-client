@@ -26,6 +26,7 @@ def test_get_sensors_by_station_id(stat_id, expected):
         db.get_sensor_by_station_id("")
         db.get_sensor_by_station_id(None)
 
+
 def test_get_all_stations_by_param():
     db = DbManager()
     result = db.get_all_stations_by_param("CO")
@@ -38,3 +39,9 @@ def test_get_data_by_sensors_ids():
     result = db.get_data_by_sensors_ids([3575, 3576])
     assert len(result) == 120
     assert type(result) == list
+
+
+def test__get_data_by_stations_ids():
+    db = DbManager()
+    result = db.get_data_by_stations_ids([530, 531], "NO2")
+    assert len(result) == 0

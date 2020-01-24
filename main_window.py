@@ -26,9 +26,9 @@ class UiMainWindow:
         main_window.setObjectName("MainWindow")
         main_window.resize(1000, 713)
 
-        self.centralwidget = QtWidgets.QWidget(main_window)
-        self.centralwidget.setObjectName("centralwidget")
-        self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
+        self.central_widget = QtWidgets.QWidget(main_window)
+        self.central_widget.setObjectName("centralwidget")
+        self.tableWidget = QtWidgets.QTableWidget(self.central_widget)
         self.tableWidget.setGeometry(QtCore.QRect(0, 0, 900, 391))
         # self.tableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.tableWidget.setAutoScroll(False)
@@ -54,7 +54,7 @@ class UiMainWindow:
         item = QtWidgets.QTableWidgetItem()
         self.tableWidget.setHorizontalHeaderItem(7, item)
 
-        self.params_widget = QtWidgets.QTableWidget(self.centralwidget)
+        self.params_widget = QtWidgets.QTableWidget(self.central_widget)
         self.params_widget.setGeometry(QtCore.QRect(10, 420, 350, 231))
         self.params_widget.setRowCount(0)
         self.params_widget.setObjectName("params_widget")
@@ -71,26 +71,26 @@ class UiMainWindow:
         item = QtWidgets.QTableWidgetItem()
         self.params_widget.setHorizontalHeaderItem(2, item)
 
-        self.main_label = QLabel(self.centralwidget)
+        self.main_label = QLabel(self.central_widget)
         self.main_label.setGeometry(QtCore.QRect(10, 400, 500, 16))
         self.main_label.setObjectName("main_label")
 
-        self.push_button_draw_graph = QPushButton(self.centralwidget)
+        self.push_button_draw_graph = QPushButton(self.central_widget)
         self.push_button_draw_graph.setGeometry(QtCore.QRect(30, 660, 171, 23))
         self.push_button_draw_graph.setObjectName("push_button_draw_graph")
         self.push_button_draw_graph.clicked.connect(self.draw_graph_button_clicked)
         self.push_button_draw_graph.setDisabled(True)
 
-        self.push_button_download_data = QPushButton(self.centralwidget)
+        self.push_button_download_data = QPushButton(self.central_widget)
         self.push_button_download_data.setGeometry(QtCore.QRect(450, 450, 141, 61))
         self.push_button_download_data.setObjectName("push_button_download_data")
         self.push_button_download_data.clicked.connect(self.start_download_data)
 
-        self.pushButton_3 = QPushButton(self.centralwidget)
+        self.pushButton_3 = QPushButton(self.central_widget)
         self.pushButton_3.setGeometry(QtCore.QRect(450, 520, 141, 61))
         self.pushButton_3.setObjectName("pushButton_3")
 
-        self.layout_widget_radio_buttons = QtWidgets.QWidget(self.centralwidget)
+        self.layout_widget_radio_buttons = QtWidgets.QWidget(self.central_widget)
         self.layout_widget_radio_buttons.setGeometry(QtCore.QRect(460, 590, 160, 61))
         self.layout_widget_radio_buttons.setObjectName("layout_widget_radio_buttons")
 
@@ -107,52 +107,53 @@ class UiMainWindow:
         self.radioButton_2 = QtWidgets.QRadioButton(self.layout_widget_radio_buttons)
         self.radioButton_2.setObjectName("radioButton_2")
         self.layout_radio_buttons.addWidget(self.radioButton_2)
+        self.radioButton_2.setDisabled(True)
 
-        main_window.setCentralWidget(self.centralwidget)
+        main_window.setCentralWidget(self.central_widget)
         self.statusbar = QtWidgets.QStatusBar(main_window)
         self.statusbar.setObjectName("statusbar")
         main_window.setStatusBar(self.statusbar)
 
-        self.retranslate_ui(main_window)
+        self.re_translate_ui(main_window)
         QtCore.QMetaObject.connectSlotsByName(main_window)
-        self.radioButton_2.setDisabled(True)
+
 
         self.radio_button_on_click()
 
-    def retranslate_ui(self, MainWindow):
-        _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "Klient jakości powietrza"))
+    def re_translate_ui(self, main_window):
+        _t = QtCore.QCoreApplication.translate
+        main_window.setWindowTitle(_t("MainWindow", "Klient jakości powietrza"))
         item = self.tableWidget.horizontalHeaderItem(0)
-        item.setText(_translate("MainWindow", "Nazwa stacji"))
+        item.setText(_t("MainWindow", "Nazwa stacji"))
         item = self.tableWidget.horizontalHeaderItem(1)
-        item.setText(_translate("MainWindow", "Długość geo."))
+        item.setText(_t("MainWindow", "Długość geo."))
         item = self.tableWidget.horizontalHeaderItem(2)
-        item.setText(_translate("MainWindow", "Szerokość geo."))
+        item.setText(_t("MainWindow", "Szerokość geo."))
         item = self.tableWidget.horizontalHeaderItem(3)
-        item.setText(_translate("MainWindow", "Miasto"))
+        item.setText(_t("MainWindow", "Miasto"))
         item = self.tableWidget.horizontalHeaderItem(4)
-        item.setText(_translate("MainWindow", "Adres"))
+        item.setText(_t("MainWindow", "Adres"))
         item = self.tableWidget.horizontalHeaderItem(5)
-        item.setText(_translate("MainWindow", "Województwo"))
+        item.setText(_t("MainWindow", "Województwo"))
         item = self.tableWidget.horizontalHeaderItem(6)
-        item.setText(_translate("MainWindow", "Użyj"))
+        item.setText(_t("MainWindow", "Użyj"))
         item = self.tableWidget.horizontalHeaderItem(7)
-        item.setText(_translate("MainWindow", "Id"))
+        item.setText(_t("MainWindow", "Id"))
         __sortingEnabled = self.tableWidget.isSortingEnabled()
         self.tableWidget.setSortingEnabled(False)
         self.tableWidget.setSortingEnabled(__sortingEnabled)
         item = self.params_widget.horizontalHeaderItem(0)
-        item.setText(_translate("MainWindow", "Użyj"))
+        item.setText(_t("MainWindow", "Użyj"))
         item = self.params_widget.horizontalHeaderItem(1)
-        item.setText(_translate("MainWindow", "Nazwa"))
+        item.setText(_t("MainWindow", "Nazwa"))
         item = self.params_widget.horizontalHeaderItem(2)
-        item.setText(_translate("MainWindow", "Symbol"))
-        self.main_label.setText(_translate("MainWindow", "Stanowiska pomiarowe dla wybranej stacji"))
-        self.push_button_draw_graph.setText(_translate("MainWindow", "Rysuj wykres dla stacji"))
-        self.push_button_download_data.setText(_translate("MainWindow", "Pobierz dane"))
-        self.pushButton_3.setText(_translate("MainWindow", "Usuń historię zapytań"))
-        self.radioButton.setText(_translate("MainWindow", "Tryb jednej stacji"))
-        self.radioButton_2.setText(_translate("MainWindow", "Tryb jednego stanowiska"))
+        item.setText(_t("MainWindow", "Symbol"))
+        self.main_label.setText(_t("MainWindow", "Stanowiska pomiarowe dla wybranej stacji"))
+        self.push_button_draw_graph.setText(_t("MainWindow", "Rysuj wykres dla stacji"))
+        self.push_button_download_data.setText(_t("MainWindow", "Pobierz dane"))
+        self.pushButton_3.setText(_t("MainWindow", "Usuń historię zapytań"))
+        self.radioButton.setText(_t("MainWindow", "Tryb jednej stacji"))
+        self.radioButton_2.setText(_t("MainWindow", "Tryb jednego stanowiska"))
 
     @staticmethod
     def add_checkbox_to_table(table: QTableWidget, row, col, checked=False):
@@ -170,6 +171,8 @@ class UiMainWindow:
             data = self.data_manager.get_data_by_sensor_ids_for_graphing(sensors)
             station_name = self.data_manager.get_station_name_by_id(self.current_station)
             GraphDrawer.draw_station_graph(station_name, data)
+        else:
+            stations = self.selected_stations[self.current_param]
 
 
     def generate_station_view(self, stations=None):
@@ -224,7 +227,7 @@ class UiMainWindow:
                 self.selected_sensors[self.current_station].add(sensor_id)
             elif item.checkState is not QtCore.Qt.Unchecked and item.column() == 0:
                 self.selected_sensors[self.current_station].discard(sensor_id)
-            if len(self.selected_sensors[self.current_station]) >0:
+            if len(self.selected_sensors[self.current_station]) > 0:
                 self.push_button_draw_graph.setDisabled(False)
             else:
                 self.push_button_draw_graph.setDisabled(True)
