@@ -169,6 +169,9 @@ class UiMainWindow:
             sensors = self.selected_sensors[self.current_station]
             data = self.data_manager.get_data_by_sensor_ids_for_graphing(sensors)
             station_name = self.data_manager.get_station_name_by_id(self.current_station)
+            print(data)
+            print(len(data["PM2.5"][0]))
+            print(len(data["PM2.5"][1]))
             GraphDrawer.draw_station_graph(station_name, data)
 
 
