@@ -1,6 +1,7 @@
 import sqlite3
 from sqlite3 import Error as sqliteError
 import datetime
+import helpers
 
 
 class DbManagerError(Exception):
@@ -8,7 +9,8 @@ class DbManagerError(Exception):
 
 
 class DbManager:
-    DB_PATH = "C:/Users/Gustaw/source/repos/air-quality-index/data.db"  # TODO: change to relative path
+    DB_PATH = helpers.relative_path("data.db")
+    # DB_PATH = "C:/Users/Gustaw/source/repos/air-quality-index/data.db"  # TODO: change to relative path
     SQL_SETUP_DATABASE = "PRAGMA foreign_keys = ON;"
 
     # This dictionary holds all queries needed to run db
@@ -115,6 +117,10 @@ class DbManager:
         for sql in self.SET_UP_SQL.values():
             self.run_sql(sql)
 
+    @classmethod
+    def generate_placeholders(cls, length):
+        return (length * "?,")[:-1]
+
     def insert_from_list(self, table_name, data, replace=False, columns=False):
         """
         Inserts data from a list of tuple(s). Use replace=True to use SQL's INSERT OR REPLACE. Does not return anything
@@ -126,7 +132,8 @@ class DbManager:
         """
         replace = "" if not replace else "OR REPLACE"
         # generate question marks with commas and delete last comma
-        values_placeholders = (len(data[0]) * "?,")[:-1]
+
+        values_placeholders = self.generate_placeholders(len(data[0]))
         # reformat the data to the list of tuples
         columns = "" if not columns else f"({','.join(columns)})"
 
@@ -209,5 +216,7 @@ class DbManager:
               f"LEFT JOIN sensors s on stations.id = s.station_id WHERE s.param=?;"
         return self.generic_single_parameters_select(sql, param_code)
 
-if __name__ == "__main__":
-    print("X")
+    def get_data_by_sensors_ids(self, sensors_ids):
+        placeholders = self.generate_placeholders(len(sensors_ids))
+        sql = f"SELECT param_code, date, value FROM data WHERE sensor_id IN ({placeholders})"
+        return self.run_sql_select(sql, tuple(sensors_ids))

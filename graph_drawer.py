@@ -6,13 +6,14 @@ import datetime
 
 class GraphDrawer:
     DISPLAY_DATE_FORMAT = "%d-%m, %H:%M"
+
     FORMAT = {
         "C6H6": ["#ff0000", r"C$_{6}$H$_{6}$"],
         "CO": ["#0e0e42", "CO"],
         "NO2": ["#2e8a03", r"NO$_{2}$"],
         "PM10": ["#828282", "PM10"],
         "PM2.5": ["#66573d", "PM2.5"],
-        "03": ["#27c6d1", r"O$_{3}$"],
+        "O3": ["#27c6d1", r"O$_{3}$"],
         "SO2": ["#ffa70f", r"SO$_{2}$"]
     }
 

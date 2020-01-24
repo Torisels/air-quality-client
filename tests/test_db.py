@@ -31,3 +31,10 @@ def test_get_all_stations_by_param():
     result = db.get_all_stations_by_param("CO")
     assert len(result) > 1
     assert type(result) == list
+
+
+def test_get_data_by_sensors_ids():
+    db = DbManager()
+    result = db.get_data_by_sensors_ids([3575, 3576])
+    assert len(result) == 120
+    assert type(result) == list

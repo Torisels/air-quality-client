@@ -15,11 +15,12 @@ class UiMainWindow:
     def __init__(self, d_manager: DataManager):
         self.thread_pool = QThreadPool()
         self.data_manager = d_manager
-        self.selected_sensors = set()
+        self.selected_sensors = defaultdict(set)
         self.selected_stations = defaultdict(set)
         self.mode = self.MODE_STATION
         self.station_data = None
         self.current_param = None
+        self.current_station = None
 
     def setup_ui(self, main_window):
         main_window.setObjectName("MainWindow")
@@ -70,37 +71,42 @@ class UiMainWindow:
         item = QtWidgets.QTableWidgetItem()
         self.params_widget.setHorizontalHeaderItem(2, item)
 
-        self.label = QLabel(self.centralwidget)
-        self.label.setGeometry(QtCore.QRect(10, 400, 500, 16))
-        self.label.setObjectName("label")
-        self.pushButton = QtWidgets.QPushButton(self.centralwidget)
-        self.pushButton.setGeometry(QtCore.QRect(30, 660, 171, 23))
-        self.pushButton.setObjectName("pushButton")
-        self.push_button_download_data = QtWidgets.QPushButton(self.centralwidget)
+        self.main_label = QLabel(self.centralwidget)
+        self.main_label.setGeometry(QtCore.QRect(10, 400, 500, 16))
+        self.main_label.setObjectName("main_label")
+
+        self.push_button_draw_graph = QPushButton(self.centralwidget)
+        self.push_button_draw_graph.setGeometry(QtCore.QRect(30, 660, 171, 23))
+        self.push_button_draw_graph.setObjectName("push_button_draw_graph")
+        self.push_button_draw_graph.clicked.connect(self.draw_graph_button_clicked)
+        self.push_button_draw_graph.setDisabled(True)
+
+        self.push_button_download_data = QPushButton(self.centralwidget)
         self.push_button_download_data.setGeometry(QtCore.QRect(450, 450, 141, 61))
         self.push_button_download_data.setObjectName("push_button_download_data")
         self.push_button_download_data.clicked.connect(self.start_download_data)
 
-        self.pushButton_3 = QtWidgets.QPushButton(self.centralwidget)
+        self.pushButton_3 = QPushButton(self.centralwidget)
         self.pushButton_3.setGeometry(QtCore.QRect(450, 520, 141, 61))
         self.pushButton_3.setObjectName("pushButton_3")
 
-        self.verticalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
-        self.verticalLayoutWidget.setGeometry(QtCore.QRect(460, 590, 160, 61))
-        self.verticalLayoutWidget.setObjectName("verticalLayoutWidget")
-        self.verticalLayout = QtWidgets.QVBoxLayout(self.verticalLayoutWidget)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout.setObjectName("verticalLayout")
+        self.layout_widget_radio_buttons = QtWidgets.QWidget(self.centralwidget)
+        self.layout_widget_radio_buttons.setGeometry(QtCore.QRect(460, 590, 160, 61))
+        self.layout_widget_radio_buttons.setObjectName("layout_widget_radio_buttons")
 
-        self.radioButton = QtWidgets.QRadioButton(self.verticalLayoutWidget)
+        self.layout_radio_buttons = QtWidgets.QVBoxLayout(self.layout_widget_radio_buttons)
+        self.layout_radio_buttons.setContentsMargins(0, 0, 0, 0)
+        self.layout_radio_buttons.setObjectName("layout_radio_buttons")
+
+        self.radioButton = QtWidgets.QRadioButton(self.layout_widget_radio_buttons)
         self.radioButton.setObjectName("radioButton")
-        self.verticalLayout.addWidget(self.radioButton)
+        self.layout_radio_buttons.addWidget(self.radioButton)
         self.radioButton.setChecked(True)
         self.radioButton.toggled.connect(self.radio_button_on_click)
 
-        self.radioButton_2 = QtWidgets.QRadioButton(self.verticalLayoutWidget)
+        self.radioButton_2 = QtWidgets.QRadioButton(self.layout_widget_radio_buttons)
         self.radioButton_2.setObjectName("radioButton_2")
-        self.verticalLayout.addWidget(self.radioButton_2)
+        self.layout_radio_buttons.addWidget(self.radioButton_2)
 
         main_window.setCentralWidget(self.centralwidget)
         self.statusbar = QtWidgets.QStatusBar(main_window)
@@ -112,6 +118,7 @@ class UiMainWindow:
         self.radioButton_2.setDisabled(True)
 
         self.radio_button_on_click()
+
     def retranslate_ui(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "Klient jakości powietrza"))
@@ -140,8 +147,8 @@ class UiMainWindow:
         item.setText(_translate("MainWindow", "Nazwa"))
         item = self.params_widget.horizontalHeaderItem(2)
         item.setText(_translate("MainWindow", "Symbol"))
-        self.label.setText(_translate("MainWindow", "Stanowiska pomiarowe dla wybranej stacji"))
-        self.pushButton.setText(_translate("MainWindow", "Rysuj wykres dla stacji"))
+        self.main_label.setText(_translate("MainWindow", "Stanowiska pomiarowe dla wybranej stacji"))
+        self.push_button_draw_graph.setText(_translate("MainWindow", "Rysuj wykres dla stacji"))
         self.push_button_download_data.setText(_translate("MainWindow", "Pobierz dane"))
         self.pushButton_3.setText(_translate("MainWindow", "Usuń historię zapytań"))
         self.radioButton.setText(_translate("MainWindow", "Tryb jednej stacji"))
@@ -156,6 +163,14 @@ class UiMainWindow:
         else:
             check_box_item.setCheckState(QtCore.Qt.Unchecked)
         table.setItem(row, col, check_box_item)
+
+    def draw_graph_button_clicked(self):
+        if self.mode == self.MODE_STATION:
+            sensors = self.selected_sensors[self.current_station]
+            data = self.data_manager.get_data_by_sensor_ids_for_graphing(sensors)
+            station_name = self.data_manager.get_station_name_by_id(self.current_station)
+            GraphDrawer.draw_station_graph(station_name, data)
+
 
     def generate_station_view(self, stations=None):
         self.station_data = stations
@@ -173,7 +188,6 @@ class UiMainWindow:
                 item.setText(str(parameter))
                 self.tableWidget.setItem(row, col, item)
 
-
         self.tableWidget.itemClicked.connect(self.handle_table_item_clicked)
 
     def handle_table_item_clicked(self, item):
@@ -182,12 +196,12 @@ class UiMainWindow:
         if self.mode == self.MODE_STATION:
             data = self.data_manager.get_sensors(int(station_id))
             self.generate_sensor_table_view(data)
+            self.current_station = station_id
         else:
             if item.checkState() == QtCore.Qt.Checked:
                 self.selected_stations[self.current_param].add(station_id)
             elif item.checkState is not QtCore.Qt.Unchecked and item.column() == 6:
                 self.selected_stations[self.current_param].discard(station_id)
-
 
     def generate_sensor_table_view(self, data):
         self.params_widget.setRowCount(len(data))
@@ -207,9 +221,13 @@ class UiMainWindow:
         if self.mode == self.MODE_STATION:
             sensor_id = int(self.params_widget.item(item.row(), 3).text())
             if item.checkState() == QtCore.Qt.Checked:
-                self.selected_sensors.add(sensor_id)
+                self.selected_sensors[self.current_station].add(sensor_id)
             elif item.checkState is not QtCore.Qt.Unchecked and item.column() == 0:
-                self.selected_sensors.discard(sensor_id)
+                self.selected_sensors[self.current_station].discard(sensor_id)
+            if len(self.selected_sensors[self.current_station]) >0:
+                self.push_button_draw_graph.setDisabled(False)
+            else:
+                self.push_button_draw_graph.setDisabled(True)
         else:
             param_code = self.params_widget.item(item.row(), 2).text()
             self.current_param = param_code
@@ -220,8 +238,8 @@ class UiMainWindow:
         if self.radioButton.isChecked():
             self.mode = self.MODE_STATION
             self.tableWidget.setColumnHidden(6, True)
-            self.label.setText("Tryb jednej stacji. Poniżej znajduje się lista dostępnych stanowisk pomiarowych: ")
-            self.pushButton.setText("Rysuj wykres dla stacji")
+            self.main_label.setText("Tryb jednej stacji. Poniżej znajduje się lista dostępnych stanowisk pomiarowych: ")
+            self.push_button_draw_graph.setText("Rysuj wykres dla stacji")
             self.params_widget.setRowCount(0)
             if self.station_data:
                 self.generate_station_view(self.station_data)
@@ -230,8 +248,8 @@ class UiMainWindow:
                 self.radioButton_2.toggle()
                 self.radioButton.toggle()
             self.mode = self.MODE_SENSOR
-            self.label.setText("Tryb jednego stanowiska pomiarowego. Proszę wybrać stacje pomiarowe (limit: 20)")
-            self.pushButton.setText("Rysuj wykres dla stanowiska")
+            self.main_label.setText("Tryb jednego stanowiska pomiarowego. Proszę wybrać stacje pomiarowe (limit: 20)")
+            self.push_button_draw_graph.setText("Rysuj wykres dla stanowiska")
             self.tableWidget.setRowCount(0)
             self.tableWidget.setColumnHidden(6, False)
             self.params_widget.setColumnHidden(0, True)

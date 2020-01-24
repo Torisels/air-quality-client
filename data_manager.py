@@ -72,7 +72,7 @@ class DataManager:
         """
         Gets all information from specified url. Returns dict from json response.
         Inserts endpoint to cache history in database.
-        :rtype: list
+        :rtype: Union[list, dict]
         """
         try:
             response = requests.get(self.URL_BASE + url)
@@ -143,3 +143,35 @@ class DataManager:
         except DbManagerError as e:
             logger.exception(e)
             raise DataManagerError("Error getting data") from e
+
+    def get_data_by_sensor_ids_for_graphing(self, sensors):
+        """
+        :type sensors: set
+        :rtype: list[int]
+        """
+        for s_id in sensors:
+            url = self.prepare_url(self.URL_DATA, s_id)
+            if self.request_is_valid(url):
+                try:
+                    raw_data = self.call_api(url)
+                    parsed_data = DataProcessor.parse_sensor_data(raw_data, s_id)
+                    self.db.insert_api_data(parsed_data)
+                except (ApiError, DbManagerError, DataProcessingError) as e:
+                    logger.exception(e)
+                    raise DataManagerError("Error occurred when processing API data") from e
+        try:
+            sensor_data = self.db.get_data_by_sensors_ids(sensors)
+            grouped_data = {k[0]: [[], []] for k in sensor_data}
+            for row in sensor_data:
+                grouped_data[row[0]][0].append(datetime.datetime.fromtimestamp(row[1]))
+                grouped_data[row[0]][1].append(float(row[2]))
+            return grouped_data
+        except DbManagerError as e:
+            logger.exception(e)
+            raise DataManagerError("Error obtaining data from Database") from e
+
+    def get_station_name_by_id(self, station_id):
+        try:
+            return self.db.station_name_by_id(station_id)[0][0]
+        except DbManagerError as e:
+            raise DataManagerError from e
