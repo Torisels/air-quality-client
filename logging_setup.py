@@ -1,15 +1,19 @@
 import logging.config
 import logging
 import yaml
+import helpers
+
+CONF_FILE_NAME = "logging.yaml"
 
 
 def get_logger(logger_name):
     """
-
     :type logger_name: str
     :rtype: logging.Logger
     """
-    with open('logging.yaml', 'r') as f:
+
+    path_to_file = helpers.relative_path(CONF_FILE_NAME)
+    with open(path_to_file, 'r') as f:
         log_cfg = yaml.safe_load(f.read())
 
     logging.config.dictConfig(log_cfg)

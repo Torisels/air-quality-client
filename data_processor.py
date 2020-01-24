@@ -62,7 +62,7 @@ class DataProcessor:
     @classmethod
     def parse_sensors(cls, data):
         """
-        Parses data from API/sensors for sensor data.
+        Parses data from API/sensors for sensor.
 
         :type data: list
         :rtype: list
@@ -80,7 +80,7 @@ class DataProcessor:
     @classmethod
     def parse_sensor_data(cls, data, sensor_id):
         """
-        Parses data from API/data for sensor data.
+        Parses data from API/data for sensor's data.
 
         :type data: dict
         :type sensor_id: int
@@ -89,13 +89,17 @@ class DataProcessor:
         insert_data = []
         try:
             param_code = str(data["key"])
-            for value in data["values"]:
+        except KeyError as e:
+            logger.exception(e)
+            raise DataProcessingError("No key provided in data") from e
+        for value in data["values"]:
+            try:
                 insert_data.append((sensor_id,
                                     param_code,
                                     int(datetime.datetime.strptime(value["date"], cls.API_DATE_FORMAT).timestamp()),
-                                    str(value["value"])
+                                    str(float(value["value"]))
                                     ))
-        except (ValueError, KeyError) as e:
-            logger.exception(e)
+            except (ValueError, KeyError, TypeError) as e:
+                logger.exception(e)
         return insert_data
 

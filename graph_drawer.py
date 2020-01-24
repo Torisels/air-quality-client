@@ -16,15 +16,21 @@ class GraphDrawer:
         "SO2": ["#ffa70f", r"SO$_{2}$"]
     }
 
+    DISTINCT_COLORS = [
+        '#e6194b', '#3cb44b', '#ffe119', '#4363d8', '#f58231', '#911eb4', '#46f0f0', '#f032e6', '#bcf60c', '#fabebe',
+        '#008080', '#e6beff', '#9a6324', '#fffac8', '#800000', '#aaffc3', '#808000', '#ffd8b1', '#000075', '#808080',
+        '#ffffff', '#000000'
+    ]
+
     @classmethod
-    def draw_graph(cls, title_g, dates, y_series):
-        date_times = [datetime.datetime.fromtimestamp(t) for t in dates]
-        plt.title(r'This is an expression C$_{6}$H$_{6}$')
-        plt.plot_date(date_times, y_series, linestyle="solid")
+    def __draw_graph(cls, x_label, y_label):
+        plt.xlabel(x_label)
+        plt.ylabel(y_label)
         plt.gcf().autofmt_xdate()
-        date_format = mpl_dates.DateFormatter("%d-%m, %H:%M")
+        date_format = mpl_dates.DateFormatter(cls.DISPLAY_DATE_FORMAT)
         plt.gca().xaxis.set_major_formatter(date_format)
         plt.tight_layout()
+        plt.legend()
         plt.show()
 
     @classmethod
@@ -35,15 +41,20 @@ class GraphDrawer:
             plt.plot_date(data[0], data[1], color=color,
                           label=lbl, linestyle="solid", marker=",")
 
-        plt.xlabel("Czas")
-        plt.ylabel("Wartość")
-        plt.gcf().autofmt_xdate()
-        date_format = mpl_dates.DateFormatter(cls.DISPLAY_DATE_FORMAT)
-        plt.gca().xaxis.set_major_formatter(date_format)
-        plt.tight_layout()
-        plt.legend()
-        plt.show()
+        cls.__draw_graph("Czas", "Wartość")
 
+    @classmethod
+    def draw_sensor_graph(cls, sensor_code, stations_data):
+        plt.title(f"Dane dla stanowiska pomiarowego {cls.FORMAT[sensor_code][1]}")
+        for color, (stat_name, (time_data, sensor_data)) in zip(cls.DISTINCT_COLORS, stations_data.items()):
+            print(stat_name)
+
+    @classmethod
+    def draw_simple_graph(cls):
+
+        plt.title("graph1")
+        plt.plot([1,2,3,4,5],[10,20,30,40,50])
+        plt.show()
 
 if __name__ == "__main__":
     data = DbManager.get_instance().get_data(3575)

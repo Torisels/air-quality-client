@@ -8,18 +8,6 @@ class DbManagerError(Exception):
 
 
 class DbManager:
-    __INSTANCE = None
-
-    @classmethod
-    def get_instance(cls):
-        """
-        Implementation of singleton pattern. Use this to get instance of DbManager.
-        :rtype: DbManager
-        """
-        if cls.__INSTANCE is None:
-            cls.__INSTANCE = DbManager()
-        return cls.__INSTANCE
-
     DB_PATH = "C:/Users/Gustaw/source/repos/air-quality-index/data.db"  # TODO: change to relative path
     SQL_SETUP_DATABASE = "PRAGMA foreign_keys = ON;"
 
@@ -112,7 +100,10 @@ class DbManager:
         """
         try:
             cursor = self.connection.cursor()
-            cursor.execute(sql, data)
+            if data:
+                cursor.execute(sql, data)
+            else:
+                cursor.execute(sql)
             return cursor.fetchall()
         except sqliteError as e:
             raise DbManagerError("Error when performing sql select query") from e
@@ -152,9 +143,19 @@ class DbManager:
         self.run_sql(sql, [(endpoint, timestamp)])
 
     def generic_single_parameters_select(self, sql, data):
-        data = (data,)
-        res = self.run_sql_select(sql, data)
-        return None if len(res) == 0 else res
+        if data:
+            data = (data,)
+        return self.run_sql_select(sql, data)
+
+    def get_all_station_data(self, station_id=None):
+        where = " WHERE stations.id = ?" if station_id else ""
+        sql = f"SELECT stations.name, stations.latitude, stations.longitude, c.name, stations.address," \
+              f"c.province_name, stations.id " \
+              f"FROM stations LEFT JOIN cities c on stations.city = c.id{where};"
+        result = self.generic_single_parameters_select(sql, station_id)
+        if result:
+            return result
+        raise DbManagerError("Result is empty")
 
     def get_last_request(self, endpoint):
         """
@@ -164,8 +165,7 @@ class DbManager:
         :return: any
         """
         sql = "SELECT timestamp from request_history WHERE endpoint=? ORDER BY id DESC LIMIT 1"
-        data = (endpoint,)
-        res = self.run_sql_select(sql, data)
+        res = self.run_sql_select(sql, (endpoint,))
         return None if len(res) == 0 else res[0][0]
 
     def get_all_sensors(self, station_id):
@@ -193,7 +193,21 @@ class DbManager:
         sql = "SELECT name FROM stations WHERE id=?"
         return self.generic_single_parameters_select(sql, station_id)
 
+    def get_sensor_by_station_id(self, station_id):
+        sql = "SELECT p.name, s.param, s.id FROM sensors s LEFT JOIN params p on s.param = p.code " \
+              "LEFT JOIN stations st on s.station_id = st.id where st.id = ?"
+        return self.generic_single_parameters_select(sql, station_id)
+
+    def get_all_params(self):
+        sql = "SELECT name, code FROM params"
+        return self.generic_single_parameters_select(sql, None)
+
+    def get_all_stations_by_param(self, param_code):
+        sql = f"SELECT stations.name, stations.latitude, stations.longitude, c.name, stations.address," \
+              f"c.province_name, stations.id " \
+              f"FROM stations LEFT JOIN cities c on stations.city = c.id " \
+              f"LEFT JOIN sensors s on stations.id = s.station_id WHERE s.param=?;"
+        return self.generic_single_parameters_select(sql, param_code)
+
 if __name__ == "__main__":
-    db = DbManager.get_instance()
-    result = db.get_last_request("/station/findAll/")
     print("X")
