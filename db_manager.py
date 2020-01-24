@@ -9,8 +9,7 @@ class DbManagerError(Exception):
 
 
 class DbManager:
-    DB_PATH = helpers.relative_path("data.db")
-    # DB_PATH = "C:/Users/Gustaw/source/repos/air-quality-index/data.db"  # TODO: change to relative path
+    DB_PATH = "data.db"
     SQL_SETUP_DATABASE = "PRAGMA foreign_keys = ON;"
 
     # This dictionary holds all queries needed to run db
@@ -182,8 +181,8 @@ class DbManager:
         return None if len(res) == 0 else res
 
     def insert_api_data(self, data):
-        cols = ["sensor_id", "param_code", "date", "value"]
-        self.insert_from_list("data", data, columns=cols)
+        cols = ["id", "sensor_id", "param_code", "date", "value"]
+        self.insert_from_list("data", data, replace=True, columns=cols)
 
     def get_data(self, sensor_id):
         sql = "SELECT date, value FROM data where sensor_id = ?"
@@ -218,5 +217,14 @@ class DbManager:
 
     def get_data_by_sensors_ids(self, sensors_ids):
         placeholders = self.generate_placeholders(len(sensors_ids))
-        sql = f"SELECT param_code, date, value FROM data WHERE sensor_id IN ({placeholders})"
+        sql = f"SELECT param_code, date, value FROM data WHERE sensor_id IN ({placeholders})" \
+              f" ORDER BY date ASC "
         return self.run_sql_select(sql, tuple(sensors_ids))
+
+    def get_data_by_stations_ids(self, station_ids, param_code):
+        placeholders = self.generate_placeholders(len(station_ids))
+        sql = f"SELECT d.param_code, d.date, d.value FROM data d LEFT JOIN sensors s ON " \
+              f"s.id = d.sensor_id LEFT JOIN stations st on st.id = s.station_id WHERE " \
+              f"st.id IN ({placeholders}) and d.param_code = ?"
+        return self.run_sql_select(sql, tuple(station_ids)+(param_code,))
+
