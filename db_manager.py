@@ -182,8 +182,8 @@ class DbManager:
         return None if len(res) == 0 else res
 
     def insert_api_data(self, data):
-        cols = ["sensor_id", "param_code", "date", "value"]
-        self.insert_from_list("data", data, columns=cols)
+        cols = ["id", "sensor_id", "param_code", "date", "value"]
+        self.insert_from_list("data", data, replace=True, columns=cols)
 
     def get_data(self, sensor_id):
         sql = "SELECT date, value FROM data where sensor_id = ?"
@@ -218,5 +218,6 @@ class DbManager:
 
     def get_data_by_sensors_ids(self, sensors_ids):
         placeholders = self.generate_placeholders(len(sensors_ids))
-        sql = f"SELECT param_code, date, value FROM data WHERE sensor_id IN ({placeholders})"
+        sql = f"SELECT param_code, date, value FROM data WHERE sensor_id IN ({placeholders})" \
+              f" ORDER BY date ASC "
         return self.run_sql_select(sql, tuple(sensors_ids))

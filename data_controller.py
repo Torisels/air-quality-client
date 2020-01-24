@@ -46,19 +46,19 @@ class DataController:
             logger.exception(e)
 
     @classmethod
-    def get_all_data_for_station(cls, station_id):
-        sensors = DbManager.get_instance().get_all_sensors(station_id)
-        for sensor in sensors:
-            sensor_id = sensor[0]
-            sensor_key = sensor[1]
-            raw_sensor_data = DataManager.get_from_url(DataManager.URL_DATA, sensor_id)
-            if raw_sensor_data:
-                if sensor_key != raw_sensor_data["key"]:
-                    logger.error(
-                        f"Data for {sensor} is invali. Sensor key: {sensor_key} vs APi key {raw_sensor_data['key']}")
-                else:
-                    parsed_data = DataProcessor.parse_sensor_data(raw_sensor_data, sensor_id)
-                    DbManager.get_instance().insert_api_data(parsed_data)
+        def get_all_data_for_station(cls, station_id):
+            sensors = DbManager.get_instance().get_all_sensors(station_id)
+            for sensor in sensors:
+                sensor_id = sensor[0]
+                sensor_key = sensor[1]
+                raw_sensor_data = DataManager.get_from_url(DataManager.URL_DATA, sensor_id)
+                if raw_sensor_data:
+                    if sensor_key != raw_sensor_data["key"]:
+                        logger.error(
+                            f"Data for {sensor} is invali. Sensor key: {sensor_key} vs APi key {raw_sensor_data['key']}")
+                    else:
+                        parsed_data = DataProcessor.parse_sensor_data(raw_sensor_data, sensor_id)
+                        DbManager.get_instance().insert_api_data(parsed_data)
 
     @classmethod
     def single_station_for_graph(cls, station_id, excluded_sensors=None):

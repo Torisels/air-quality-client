@@ -161,6 +161,9 @@ class DataManager:
                     raise DataManagerError("Error occurred when processing API data") from e
         try:
             sensor_data = self.db.get_data_by_sensors_ids(sensors)
+            if len(sensor_data) == 0:
+                raise DataManagerError("Db returned empty list")
+
             grouped_data = {k[0]: [[], []] for k in sensor_data}
             for row in sensor_data:
                 grouped_data[row[0]][0].append(datetime.datetime.fromtimestamp(row[1]))

@@ -30,7 +30,7 @@ class GraphDrawer:
         plt.gcf().autofmt_xdate()
         date_format = mpl_dates.DateFormatter(cls.DISPLAY_DATE_FORMAT)
         plt.gca().xaxis.set_major_formatter(date_format)
-        # plt.tight_layout()
+        plt.tight_layout()
         plt.legend()
         plt.show()
 
@@ -39,8 +39,8 @@ class GraphDrawer:
         plt.title(f"Dane dla stacji pomiarowej: {station_name}")
         for series_name, data in sensors_data.items():
             color, lbl = cls.FORMAT[series_name]
-            plt.plot_date(sorted(data[0]), data[1][:-1], color=color,
-                          label=lbl, linestyle="solid")
+            plt.plot_date(data[0], data[1], color=color,
+                          label=lbl, linestyle="solid", marker=",")
 
         cls.__draw_graph("Czas", "Wartość")
 

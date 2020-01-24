@@ -94,9 +94,11 @@ class DataProcessor:
             raise DataProcessingError("No key provided in data") from e
         for value in data["values"]:
             try:
-                insert_data.append((sensor_id,
+                timestamp = datetime.datetime.strptime(value["date"], cls.API_DATE_FORMAT).timestamp()
+                insert_data.append((hash((sensor_id, timestamp)),
+                                    sensor_id,
                                     param_code,
-                                    int(datetime.datetime.strptime(value["date"], cls.API_DATE_FORMAT).timestamp()),
+                                    timestamp,
                                     str(float(value["value"]))
                                     ))
             except (ValueError, KeyError, TypeError) as e:

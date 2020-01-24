@@ -24,13 +24,13 @@ class UiMainWindow:
 
     def setup_ui(self, main_window):
         main_window.setObjectName("MainWindow")
-        main_window.resize(832, 713)
+        main_window.resize(1000, 713)
 
         self.centralwidget = QtWidgets.QWidget(main_window)
         self.centralwidget.setObjectName("centralwidget")
         self.tableWidget = QtWidgets.QTableWidget(self.centralwidget)
-        self.tableWidget.setGeometry(QtCore.QRect(0, 0, 800, 391))
-        self.tableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        self.tableWidget.setGeometry(QtCore.QRect(0, 0, 900, 391))
+        # self.tableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.tableWidget.setAutoScroll(False)
         self.tableWidget.setColumnCount(8)
         self.tableWidget.setColumnHidden(7, True)
@@ -55,7 +55,7 @@ class UiMainWindow:
         self.tableWidget.setHorizontalHeaderItem(7, item)
 
         self.params_widget = QtWidgets.QTableWidget(self.centralwidget)
-        self.params_widget.setGeometry(QtCore.QRect(10, 420, 318, 231))
+        self.params_widget.setGeometry(QtCore.QRect(10, 420, 350, 231))
         self.params_widget.setRowCount(0)
         self.params_widget.setObjectName("params_widget")
         self.params_widget.setColumnCount(4)
@@ -169,9 +169,6 @@ class UiMainWindow:
             sensors = self.selected_sensors[self.current_station]
             data = self.data_manager.get_data_by_sensor_ids_for_graphing(sensors)
             station_name = self.data_manager.get_station_name_by_id(self.current_station)
-            print(data)
-            print(len(data["PM2.5"][0]))
-            print(len(data["PM2.5"][1]))
             GraphDrawer.draw_station_graph(station_name, data)
 
 
@@ -198,8 +195,8 @@ class UiMainWindow:
         station_id = int(self.tableWidget.item(item_row, 7).text())
         if self.mode == self.MODE_STATION:
             data = self.data_manager.get_sensors(int(station_id))
-            self.generate_sensor_table_view(data)
             self.current_station = station_id
+            self.generate_sensor_table_view(data)
         else:
             if item.checkState() == QtCore.Qt.Checked:
                 self.selected_stations[self.current_param].add(station_id)
@@ -210,7 +207,7 @@ class UiMainWindow:
         self.params_widget.setRowCount(len(data))
         for row, sensor in enumerate(data):
             if self.mode == self.MODE_STATION:
-                checked = True if sensor[2] in self.selected_sensors else False
+                checked = True if sensor[2] in self.selected_sensors[self.current_station] else False
                 self.add_checkbox_to_table(self.params_widget, row, 0, checked)
             for column, element in enumerate(sensor):
                 column += 1
@@ -223,7 +220,7 @@ class UiMainWindow:
     def handle_sensor_table_item_clicked(self, item: QCheckBox):
         if self.mode == self.MODE_STATION:
             sensor_id = int(self.params_widget.item(item.row(), 3).text())
-            if item.checkState() == QtCore.Qt.Checked:
+            if item.checkState() == QtCore.Qt.Checked and item.column() == 0:
                 self.selected_sensors[self.current_station].add(sensor_id)
             elif item.checkState is not QtCore.Qt.Unchecked and item.column() == 0:
                 self.selected_sensors[self.current_station].discard(sensor_id)
@@ -244,6 +241,7 @@ class UiMainWindow:
             self.main_label.setText("Tryb jednej stacji. Poniżej znajduje się lista dostępnych stanowisk pomiarowych: ")
             self.push_button_draw_graph.setText("Rysuj wykres dla stacji")
             self.params_widget.setRowCount(0)
+            self.params_widget.setColumnHidden(0, False)
             if self.station_data:
                 self.generate_station_view(self.station_data)
         else:
