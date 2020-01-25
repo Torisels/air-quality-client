@@ -23,3 +23,4 @@ def test_parse_data():
 
     with pytest.raises(DataProcessingError):
         DataProcessor.parse_sensor_data(data[3], 92)
+

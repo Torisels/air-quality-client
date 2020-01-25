@@ -1,7 +1,6 @@
 import sqlite3
 from sqlite3 import Error as sqliteError
 import datetime
-import helpers
 
 
 class DbManagerError(Exception):
@@ -9,7 +8,8 @@ class DbManagerError(Exception):
 
 
 class DbManager:
-    DB_PATH = "data.db"
+    # DB_PATH = "data.db"
+    DB_PATH = "C:/Users/Gustaw/source/repos/air-quality-index/data.db"
     SQL_SETUP_DATABASE = "PRAGMA foreign_keys = ON;"
 
     # This dictionary holds all queries needed to run db
@@ -62,8 +62,10 @@ class DbManager:
                             ("SO2", "dwutlenek siarki", "SO2")
                             ;""")
 
-    def __init__(self):
+    def __init__(self, path=None):
         try:
+            if path:
+                self.DB_PATH = path
             connection = sqlite3.connect(self.DB_PATH)
             self.connection = connection  # If everything went ok => set instance variable
             self.__set_up()  # Create all needed tables.
@@ -154,10 +156,10 @@ class DbManager:
         return self.run_sql_select(sql, data)
 
     def get_all_station_data(self, station_id=None):
-        where = " WHERE stations.id = ?" if station_id else ""
+        where = "WHERE stations.id = ?" if station_id else ""
         sql = f"SELECT stations.name, stations.latitude, stations.longitude, c.name, stations.address," \
               f"c.province_name, stations.id " \
-              f"FROM stations LEFT JOIN cities c on stations.city = c.id{where};"
+              f"FROM stations LEFT JOIN cities c on stations.city = c.id {where};"
         result = self.generic_single_parameters_select(sql, station_id)
         if result:
             return result
@@ -211,7 +213,7 @@ class DbManager:
     def get_all_stations_by_param(self, param_code):
         sql = f"SELECT stations.name, stations.latitude, stations.longitude, c.name, stations.address," \
               f"c.province_name, stations.id " \
-              f"FROM stations LEFT JOIN cities c on stations.city = c.id " \
+              f"FROM stations INNER JOIN cities c on stations.city = c.id " \
               f"LEFT JOIN sensors s on stations.id = s.station_id WHERE s.param=?;"
         return self.generic_single_parameters_select(sql, param_code)
 
@@ -223,8 +225,17 @@ class DbManager:
 
     def get_data_by_stations_ids(self, station_ids, param_code):
         placeholders = self.generate_placeholders(len(station_ids))
-        sql = f"SELECT d.param_code, d.date, d.value FROM data d LEFT JOIN sensors s ON " \
-              f"s.id = d.sensor_id LEFT JOIN stations st on st.id = s.station_id WHERE " \
-              f"st.id IN ({placeholders}) and d.param_code = ?"
-        return self.run_sql_select(sql, tuple(station_ids)+(param_code,))
+        sql = f"SELECT st.name, d.date, d.value FROM data d LEFT JOIN sensors s ON " \
+              f"s.id = d.sensor_id INNER JOIN stations st on st.id = s.station_id WHERE " \
+              f"st.id IN ({placeholders}) and d.param_code = ? ORDER BY date ASC"
+        return self.run_sql_select(sql, tuple(station_ids) + (param_code,))
 
+    def get_sensors_by_stations_ids_sensor_code(self, station_ids, param_code):
+        placeholders = self.generate_placeholders(len(station_ids))
+        sql = f"SELECT s.id FROM sensors s INNER JOIN stations st on s.station_id = st.id " \
+              f"WHERE st.id IN ({placeholders}) AND s.param = ?"
+        return self.run_sql_select(sql, tuple(station_ids) + (param_code,))
+
+    def delete_cache(self):
+        sql = "DELETE FROM request_history"
+        self.run_sql(sql)

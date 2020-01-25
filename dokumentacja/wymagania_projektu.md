@@ -1,7 +1,6 @@
 # GIOŚ Jakość powietrza
 Projekt z przedmiotu PIPR jako obligatoryjny element zaliczenia.
 
-
 ## Temat:
 Pobieranie danych o obecnym i historycznym stanie jakości powietrza ze stacji pomiarowych GIOŚ za pomocą [interfejsów API](https://powietrze.gios.gov.pl/pjp/content/api) i prezentowanie ich na wykresie.
 

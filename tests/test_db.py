@@ -37,11 +37,11 @@ def test_get_all_stations_by_param():
 def test_get_data_by_sensors_ids():
     db = DbManager()
     result = db.get_data_by_sensors_ids([3575, 3576])
-    assert len(result) == 120
+    assert len(result) >= 96
     assert type(result) == list
 
 
 def test__get_data_by_stations_ids():
     db = DbManager()
     result = db.get_data_by_stations_ids([530, 531], "NO2")
-    assert len(result) == 0
+    assert len(result) >= 47

@@ -1,18 +1,19 @@
 from PyQt5 import QtCore, QtWidgets
 from PyQt5.QtCore import *
 from PyQt5.QtWidgets import *
-from data_manager import DataManager
+from data_manager import DataManager, DataManagerError
 from db_manager import DbManager
 from graph_drawer import GraphDrawer
 from collections import defaultdict
-import sys
+from logging_setup import get_logger
+import logging
 
 
 class UiMainWindow:
     MODE_STATION = 0
     MODE_SENSOR = 1
 
-    def __init__(self, d_manager: DataManager):
+    def __init__(self, d_manager: DataManager, logger: logging.Logger):
         self.thread_pool = QThreadPool()
         self.data_manager = d_manager
         self.selected_sensors = defaultdict(set)
@@ -21,8 +22,10 @@ class UiMainWindow:
         self.station_data = None
         self.current_param = None
         self.current_station = None
+        self.logger = logger
 
     def setup_ui(self, main_window):
+        """Generates UI"""
         main_window.setObjectName("MainWindow")
         main_window.resize(1000, 713)
 
@@ -30,7 +33,6 @@ class UiMainWindow:
         self.central_widget.setObjectName("centralwidget")
         self.tableWidget = QtWidgets.QTableWidget(self.central_widget)
         self.tableWidget.setGeometry(QtCore.QRect(0, 0, 900, 391))
-        # self.tableWidget.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
         self.tableWidget.setAutoScroll(False)
         self.tableWidget.setColumnCount(8)
         self.tableWidget.setColumnHidden(7, True)
@@ -55,7 +57,7 @@ class UiMainWindow:
         self.tableWidget.setHorizontalHeaderItem(7, item)
 
         self.params_widget = QtWidgets.QTableWidget(self.central_widget)
-        self.params_widget.setGeometry(QtCore.QRect(10, 420, 350, 231))
+        self.params_widget.setGeometry(QtCore.QRect(10, 420, 361, 231))
         self.params_widget.setRowCount(0)
         self.params_widget.setObjectName("params_widget")
         self.params_widget.setColumnCount(4)
@@ -76,19 +78,36 @@ class UiMainWindow:
         self.main_label.setObjectName("main_label")
 
         self.push_button_draw_graph = QPushButton(self.central_widget)
-        self.push_button_draw_graph.setGeometry(QtCore.QRect(30, 660, 171, 23))
+        self.push_button_draw_graph.setGeometry(QtCore.QRect(10, 660, 171, 23))
         self.push_button_draw_graph.setObjectName("push_button_draw_graph")
-        self.push_button_draw_graph.clicked.connect(self.draw_graph_button_clicked)
+        self.push_button_draw_graph.clicked.connect(lambda: self.download_data(True))
         self.push_button_draw_graph.setDisabled(True)
+
+        self.push_button_download_specific_data = QPushButton(self.central_widget)
+        self.push_button_download_specific_data.setGeometry(QtCore.QRect(200, 660, 171, 23))
+        self.push_button_download_specific_data.setObjectName("push_button_download_specific_data")
+        self.push_button_download_specific_data.clicked.connect(lambda: self.download_data(False))
+        self.push_button_download_specific_data.setDisabled(True)
 
         self.push_button_download_data = QPushButton(self.central_widget)
         self.push_button_download_data.setGeometry(QtCore.QRect(450, 450, 141, 61))
         self.push_button_download_data.setObjectName("push_button_download_data")
         self.push_button_download_data.clicked.connect(self.start_download_data)
 
-        self.pushButton_3 = QPushButton(self.central_widget)
-        self.pushButton_3.setGeometry(QtCore.QRect(450, 520, 141, 61))
-        self.pushButton_3.setObjectName("pushButton_3")
+        self.push_button_clear_cache = QPushButton(self.central_widget)
+        self.push_button_clear_cache.setGeometry(QtCore.QRect(450, 520, 141, 61))
+        self.push_button_clear_cache.setObjectName("push_button_clear_cache")
+        self.push_button_clear_cache.clicked.connect(self.clear_cache)
+
+        self.push_button_select_all = QPushButton(self.central_widget)
+        self.push_button_select_all.setGeometry(QtCore.QRect(600, 450, 141, 61))
+        self.push_button_select_all.setObjectName("push_button_select_all")
+        self.push_button_select_all.clicked.connect(lambda: self.toggle_all_checkboxes(True))
+
+        self.push_button_deselect_all = QPushButton(self.central_widget)
+        self.push_button_deselect_all.setGeometry(QtCore.QRect(600, 520, 141, 61))
+        self.push_button_deselect_all.setObjectName("push_button_deselect_all")
+        self.push_button_deselect_all.clicked.connect(lambda: self.toggle_all_checkboxes(False))
 
         self.layout_widget_radio_buttons = QtWidgets.QWidget(self.central_widget)
         self.layout_widget_radio_buttons.setGeometry(QtCore.QRect(460, 590, 160, 61))
@@ -98,29 +117,28 @@ class UiMainWindow:
         self.layout_radio_buttons.setContentsMargins(0, 0, 0, 0)
         self.layout_radio_buttons.setObjectName("layout_radio_buttons")
 
-        self.radioButton = QtWidgets.QRadioButton(self.layout_widget_radio_buttons)
-        self.radioButton.setObjectName("radioButton")
-        self.layout_radio_buttons.addWidget(self.radioButton)
-        self.radioButton.setChecked(True)
-        self.radioButton.toggled.connect(self.radio_button_on_click)
+        self.radio_button_station_mode = QtWidgets.QRadioButton(self.layout_widget_radio_buttons)
+        self.radio_button_station_mode.setObjectName("radio_button_station_mode")
+        self.layout_radio_buttons.addWidget(self.radio_button_station_mode)
+        self.radio_button_station_mode.setChecked(True)
+        self.radio_button_station_mode.toggled.connect(self.radio_button_on_click)
 
-        self.radioButton_2 = QtWidgets.QRadioButton(self.layout_widget_radio_buttons)
-        self.radioButton_2.setObjectName("radioButton_2")
-        self.layout_radio_buttons.addWidget(self.radioButton_2)
-        self.radioButton_2.setDisabled(True)
+        self.radio_button_sensor_mode = QtWidgets.QRadioButton(self.layout_widget_radio_buttons)
+        self.radio_button_sensor_mode.setObjectName("radio_button_sensor_mode")
+        self.layout_radio_buttons.addWidget(self.radio_button_sensor_mode)
+        self.radio_button_sensor_mode.setDisabled(True)
 
         main_window.setCentralWidget(self.central_widget)
-        self.statusbar = QtWidgets.QStatusBar(main_window)
-        self.statusbar.setObjectName("statusbar")
-        main_window.setStatusBar(self.statusbar)
+        self.status_bar = QtWidgets.QStatusBar(main_window)
+        self.status_bar.setObjectName("statusbar")
+        main_window.setStatusBar(self.status_bar)
 
         self.re_translate_ui(main_window)
+        self.radio_button_on_click()
         QtCore.QMetaObject.connectSlotsByName(main_window)
 
-
-        self.radio_button_on_click()
-
     def re_translate_ui(self, main_window):
+        """Adds all labels for items"""
         _t = QtCore.QCoreApplication.translate
         main_window.setWindowTitle(_t("MainWindow", "Klient jakości powietrza"))
         item = self.tableWidget.horizontalHeaderItem(0)
@@ -139,9 +157,9 @@ class UiMainWindow:
         item.setText(_t("MainWindow", "Użyj"))
         item = self.tableWidget.horizontalHeaderItem(7)
         item.setText(_t("MainWindow", "Id"))
-        __sortingEnabled = self.tableWidget.isSortingEnabled()
+        # __sortingEnabled = self.tableWidget.isSortingEnabled()
         self.tableWidget.setSortingEnabled(False)
-        self.tableWidget.setSortingEnabled(__sortingEnabled)
+        # self.tableWidget.setSortingEnabled(__sortingEnabled)
         item = self.params_widget.horizontalHeaderItem(0)
         item.setText(_t("MainWindow", "Użyj"))
         item = self.params_widget.horizontalHeaderItem(1)
@@ -151,12 +169,16 @@ class UiMainWindow:
         self.main_label.setText(_t("MainWindow", "Stanowiska pomiarowe dla wybranej stacji"))
         self.push_button_draw_graph.setText(_t("MainWindow", "Rysuj wykres dla stacji"))
         self.push_button_download_data.setText(_t("MainWindow", "Pobierz dane"))
-        self.pushButton_3.setText(_t("MainWindow", "Usuń historię zapytań"))
-        self.radioButton.setText(_t("MainWindow", "Tryb jednej stacji"))
-        self.radioButton_2.setText(_t("MainWindow", "Tryb jednego stanowiska"))
+        self.push_button_clear_cache.setText(_t("MainWindow", "Usuń historię zapytań"))
+        self.radio_button_station_mode.setText(_t("MainWindow", "Tryb jednej stacji"))
+        self.radio_button_sensor_mode.setText(_t("MainWindow", "Tryb jednego stanowiska"))
+        self.push_button_download_specific_data.setText(_t("MainWindow", "Pobierz wybrane dane"))
+        self.push_button_select_all.setText(_t("MainWindow", "Zaznacz wszystko"))
+        self.push_button_deselect_all.setText(_t("MainWindow", "Odznacz wszystko"))
 
     @staticmethod
     def add_checkbox_to_table(table: QTableWidget, row, col, checked=False):
+        """Adds checkboxes to given table by row, col"""
         check_box_item = QtWidgets.QTableWidgetItem()
         check_box_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
         if checked:
@@ -165,17 +187,77 @@ class UiMainWindow:
             check_box_item.setCheckState(QtCore.Qt.Unchecked)
         table.setItem(row, col, check_box_item)
 
-    def draw_graph_button_clicked(self):
+    def clear_cache(self):
+        """Clears all cache callback"""
+        try:
+            self.data_manager.delete_cache()
+        except DataManagerError as e:
+            self.logger.exception(e)
+            self.show_exception_box(e)
+
+    def enable_push_buttons(self):
+        """Helper method for enabling download data buttons"""
+        enable = False
+        if self.mode == self.MODE_STATION:
+            if self.current_station and self.selected_sensors[self.current_station]:
+                enable = True
+        else:
+            if self.current_param and self.selected_stations[self.current_param]:
+                enable = True
+
+        self.push_button_draw_graph.setEnabled(enable)
+        self.push_button_download_specific_data.setEnabled(enable)
+
+    def toggle_all_checkboxes(self, select=True):
+        """Callback method for selecting all checkboxes."""
+
+        if self.mode == self.MODE_STATION:
+            for row in range(self.params_widget.rowCount()):
+                self.add_checkbox_to_table(self.params_widget, row, 0, select)
+                if select:
+                    self.selected_sensors[self.current_station].add(int(self.params_widget.item(row, 3).text()))
+                else:
+                    self.selected_sensors[self.current_station] = set()
+        else:
+            for row in range(self.tableWidget.rowCount()):
+                self.add_checkbox_to_table(self.tableWidget, row, 6, select)
+                if select:
+                    self.selected_stations[self.current_param].add(int(self.tableWidget.item(row, 7).text()))
+                else:
+                    self.selected_stations[self.current_param] = set()
+        self.enable_push_buttons()
+
+    def download_data(self, draw_graph=True):
+        """
+        Download data callback. Gets data from API/Db
+
+        :param draw_graph: Bool
+        """
         if self.mode == self.MODE_STATION:
             sensors = self.selected_sensors[self.current_station]
-            data = self.data_manager.get_data_by_sensor_ids_for_graphing(sensors)
-            station_name = self.data_manager.get_station_name_by_id(self.current_station)
-            GraphDrawer.draw_station_graph(station_name, data)
+            try:
+                data = self.data_manager.get_data_by_sensor_ids_for_graphing(sensors)
+                if draw_graph:
+                    station_name = self.data_manager.get_station_name_by_id(self.current_station)
+                    GraphDrawer.draw_station_graph(station_name, data)
+            except DataManagerError as e:
+                self.logger.exception(e)
+                self.show_exception_box(e)
         else:
             stations = self.selected_stations[self.current_param]
-
+            try:
+                data = self.data_manager.get_data_by_station_ids_for_graphing(stations, self.current_param)
+            except DataManagerError as e:
+                self.logger.exception(e)
+                self.show_exception_box(e)
+            if draw_graph:
+                GraphDrawer.draw_sensor_graph(self.current_param, data)
 
     def generate_station_view(self, stations=None):
+        """
+        Generates station view from specified data
+        :type stations: list
+        """
         self.station_data = stations
         self.tableWidget.setRowCount(len(stations))
         self.tableWidget.setColumnHidden(7, True)
@@ -194,10 +276,18 @@ class UiMainWindow:
         self.tableWidget.itemClicked.connect(self.handle_table_item_clicked)
 
     def handle_table_item_clicked(self, item):
+        """
+        Callback for main table item clicked
+        :param item: QWidgetItem
+        """
         item_row = item.row()
         station_id = int(self.tableWidget.item(item_row, 7).text())
         if self.mode == self.MODE_STATION:
-            data = self.data_manager.get_sensors(int(station_id))
+            try:
+                data = self.data_manager.get_sensors(int(station_id))
+            except DataManagerError as e:
+                self.logger.exception(e)
+                self.show_exception_box(e)
             self.current_station = station_id
             self.generate_sensor_table_view(data)
         else:
@@ -206,7 +296,13 @@ class UiMainWindow:
             elif item.checkState is not QtCore.Qt.Unchecked and item.column() == 6:
                 self.selected_stations[self.current_param].discard(station_id)
 
+        self.enable_push_buttons()
+
     def generate_sensor_table_view(self, data):
+        """
+        Generates sensor table view from given data
+        :param data: list
+        """
         self.params_widget.setRowCount(len(data))
         for row, sensor in enumerate(data):
             if self.mode == self.MODE_STATION:
@@ -220,25 +316,33 @@ class UiMainWindow:
                 self.params_widget.setItem(row, column, item)
         self.params_widget.itemClicked.connect(self.handle_sensor_table_item_clicked)
 
-    def handle_sensor_table_item_clicked(self, item: QCheckBox):
+    def handle_sensor_table_item_clicked(self, item):
+        """
+        Handles click event for sensor table widget.
+        :param item: QCheckBox
+        """
         if self.mode == self.MODE_STATION:
             sensor_id = int(self.params_widget.item(item.row(), 3).text())
             if item.checkState() == QtCore.Qt.Checked and item.column() == 0:
                 self.selected_sensors[self.current_station].add(sensor_id)
             elif item.checkState is not QtCore.Qt.Unchecked and item.column() == 0:
                 self.selected_sensors[self.current_station].discard(sensor_id)
-            if len(self.selected_sensors[self.current_station]) > 0:
-                self.push_button_draw_graph.setDisabled(False)
-            else:
-                self.push_button_draw_graph.setDisabled(True)
         else:
             param_code = self.params_widget.item(item.row(), 2).text()
             self.current_param = param_code
-            data = self.data_manager.get_all_stations_by_param(param_code)
+            try:
+                data = self.data_manager.get_all_stations_by_param(param_code)
+            except DataManagerError as e:
+                self.logger.exception(e)
+                self.show_exception_box(e)
             self.generate_station_view(data)
+        self.enable_push_buttons()
 
     def radio_button_on_click(self):
-        if self.radioButton.isChecked():
+        """Callback for changing mode"""
+        self.current_param = None
+        self.current_station = None
+        if self.radio_button_station_mode.isChecked():
             self.mode = self.MODE_STATION
             self.tableWidget.setColumnHidden(6, True)
             self.main_label.setText("Tryb jednej stacji. Poniżej znajduje się lista dostępnych stanowisk pomiarowych: ")
@@ -249,8 +353,8 @@ class UiMainWindow:
                 self.generate_station_view(self.station_data)
         else:
             if self.station_data is None:
-                self.radioButton_2.toggle()
-                self.radioButton.toggle()
+                self.radio_button_sensor_mode.toggle()
+                self.radio_button_station_mode.toggle()
             self.mode = self.MODE_SENSOR
             self.main_label.setText("Tryb jednego stanowiska pomiarowego. Proszę wybrać stacje pomiarowe (limit: 20)")
             self.push_button_draw_graph.setText("Rysuj wykres dla stanowiska")
@@ -258,49 +362,66 @@ class UiMainWindow:
             self.tableWidget.setColumnHidden(6, False)
             self.params_widget.setColumnHidden(0, True)
 
-            data = self.data_manager.get_all_sensors_for_view()
-            self.generate_sensor_table_view(data)
+            try:
+                data = self.data_manager.get_all_sensors_for_view()
+                self.generate_sensor_table_view(data)
+            except DataManagerError as e:
+                self.logger.exception(e)
+                self.show_exception_box(e)
+        self.enable_push_buttons()
 
-    def update_ui_after_data_finished(self):
+    def update_ui_after_data_download_finished(self):
+        """Updates ui after main data download is finished"""
         self.push_button_download_data.setText("Pobierz dane")
         self.push_button_download_data.setEnabled(True)
-        self.radioButton_2.setDisabled(False)
+        self.push_button_clear_cache.setEnabled(True)
+        self.radio_button_sensor_mode.setDisabled(False)
 
     def start_download_data(self):
-        self.push_button_download_data.setText("Trwa pobieranie danych. \n Średni czas < 10s.")
+        """ Starts downloading data"""
+        self.push_button_download_data.setText("Trwa pobieranie danych.\nŚredni czas < 10s.")
         self.push_button_download_data.setEnabled(False)
-        worker = DataWorker()
+        self.push_button_clear_cache.setEnabled(False)
+        worker = ApiDataWorker()
         worker.signals.result.connect(self.generate_station_view)
-        worker.signals.finished.connect(self.update_ui_after_data_finished)
+        worker.signals.error.connect(self.show_exception_box)
+        worker.signals.finished.connect(self.update_ui_after_data_download_finished)
         self.thread_pool.start(worker)
+
+    @staticmethod
+    def show_exception_box(exception_message):
+        """
+        Show message box with exception info.
+        :param exception_message: Exception
+        """
+        msg = QMessageBox()
+        msg.setWindowTitle("Błąd!")
+        msg.setText(str(exception_message))
+        msg.setIcon(QMessageBox.Critical)
+        res = msg.exec_()
 
 
 class WorkerSignals(QObject):
     finished = pyqtSignal()
     result = pyqtSignal(list)
+    error = pyqtSignal(Exception)
 
 
-class DataWorker(QRunnable):
+class ApiDataWorker(QRunnable):
 
     def __init__(self, *args, **kwargs):
-        super(DataWorker, self).__init__()
+        super(ApiDataWorker, self).__init__()
         self.args = args
         self.kwargs = kwargs
         self.signals = WorkerSignals()
 
     @pyqtSlot()
     def run(self):
-        data = DataManager(DbManager()).prepare_necessary_data()
-        self.signals.result.emit(data)
-        self.signals.finished.emit()
-
-
-if __name__ == "__main__":
-    app = QApplication(sys.argv)
-    MainWindow = QtWidgets.QMainWindow()
-    db = DbManager()
-    data_manager = DataManager(db)
-    ui = UiMainWindow(data_manager)
-    ui.setup_ui(MainWindow)
-    MainWindow.show()
-    sys.exit(app.exec_())
+        try:
+            data = DataManager(DbManager()).prepare_necessary_data()
+            self.signals.result.emit(data)
+        except DataManagerError as e:
+            self.signals.error.emit(e)
+            get_logger("main_program").exception(e)
+        finally:
+            self.signals.finished.emit()

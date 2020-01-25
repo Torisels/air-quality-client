@@ -28,6 +28,11 @@ handlers:
     filename: data_parsing.log
     formatter: main
 
+  file_handler_main_logger:
+    class: logging.FileHandler
+    level: ERROR
+    filename: main_program.log
+    formatter: main
 
 loggers:
   data_flow:
@@ -41,5 +46,9 @@ loggers:
   data_parsing:
     level: DEBUG
     handlers: [file_handler_data_parsing]
+
+  main_program:
+    level: ERROR
+    handlers: [file_handler_main_logger]
 root:
   handlers: []
