@@ -18,13 +18,13 @@ test_data = [(99999, 0), ("abc", 0)]
 def test_get_sensors_by_station_id(stat_id, expected):
     db = DbManager()
 
-    result = db.get_sensor_by_station_id(stat_id)
+    result = db.get_sensors_by_station_id(stat_id)
     assert type(result) == list
     assert len(result) == expected
 
     with pytest.raises(DbManagerError):
-        db.get_sensor_by_station_id("")
-        db.get_sensor_by_station_id(None)
+        db.get_sensors_by_station_id("")
+        db.get_sensors_by_station_id(None)
 
 
 def test_get_all_stations_by_param():

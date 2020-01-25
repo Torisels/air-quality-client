@@ -151,11 +151,23 @@ class DbManager:
         self.run_sql(sql, [(endpoint, timestamp)])
 
     def generic_single_parameters_select(self, sql, data):
+        """
+        Performs generic select with single parameter
+        :param sql: str
+        :param data: Any
+        :return: Any
+        """
         if data:
             data = (data,)
         return self.run_sql_select(sql, data)
 
     def get_all_station_data(self, station_id=None):
+        """
+        Gets all station information by it's ID. If id is not provided returns all stations.
+
+        :type station_id: Union[int, None]
+        :return: list
+        """
         where = "WHERE stations.id = ?" if station_id else ""
         sql = f"SELECT stations.name, stations.latitude, stations.longitude, c.name, stations.address," \
               f"c.province_name, stations.id " \
@@ -177,40 +189,61 @@ class DbManager:
         return None if len(res) == 0 else res[0][0]
 
     def get_all_sensors(self, station_id):
+        """
+        Gets all sensors for specified station
+
+        :type station_id: int
+        :return: Union[None, list]
+        """
         sql = "SELECT id, param FROM sensors WHERE station_id=?"
         data = (station_id,)
         res = self.run_sql_select(sql, data)
         return None if len(res) == 0 else res
 
     def insert_api_data(self, data):
+        """
+        Inserts sensor's data.
+
+        :type data: list
+        """
         cols = ["id", "sensor_id", "param_code", "date", "value"]
         self.insert_from_list("data", data, replace=True, columns=cols)
 
-    def get_data(self, sensor_id):
-        sql = "SELECT date, value FROM data where sensor_id = ?"
-        data = (sensor_id,)
-        res = self.run_sql_select(sql, data)
-        return None if len(res) == 0 else res
-
-    def get_all_data_for_station(self, station_id):
-        sql = "SELECT param_code, date, value " \
-              "FROM data LEFT JOIN sensors s on data.sensor_id = s.id WHERE s.station_id = ?"
-        return self.generic_single_parameters_select(sql, station_id)
-
     def station_name_by_id(self, station_id):
+        """
+        Gets station name by given id
+
+        :type station_id: int
+        :rtype: list(str)
+        """
         sql = "SELECT name FROM stations WHERE id=?"
         return self.generic_single_parameters_select(sql, station_id)
 
-    def get_sensor_by_station_id(self, station_id):
+    def get_sensors_by_station_id(self, station_id):
+        """
+        Gets all sensors for station by station id.
+
+        :type station_id: int
+        :rtype: list
+        """
         sql = "SELECT p.name, s.param, s.id FROM sensors s LEFT JOIN params p on s.param = p.code " \
               "LEFT JOIN stations st on s.station_id = st.id where st.id = ?"
         return self.generic_single_parameters_select(sql, station_id)
 
     def get_all_params(self):
+        """
+        Gets all available sensor types.
+        :rtype: list
+        """
         sql = "SELECT name, code FROM params"
         return self.generic_single_parameters_select(sql, None)
 
     def get_all_stations_by_param(self, param_code):
+        """
+        Gets all stations by given param code ex. CO, NO2
+        :type param_code: str
+        :rtype: list
+        """
         sql = f"SELECT stations.name, stations.latitude, stations.longitude, c.name, stations.address," \
               f"c.province_name, stations.id " \
               f"FROM stations INNER JOIN cities c on stations.city = c.id " \
@@ -218,12 +251,24 @@ class DbManager:
         return self.generic_single_parameters_select(sql, param_code)
 
     def get_data_by_sensors_ids(self, sensors_ids):
+        """
+        Gets all data by sensor ids
+        :type sensors_ids: Union[list, set]
+        :rtype: list
+        """
         placeholders = self.generate_placeholders(len(sensors_ids))
         sql = f"SELECT param_code, date, value FROM data WHERE sensor_id IN ({placeholders})" \
               f" ORDER BY date ASC "
         return self.run_sql_select(sql, tuple(sensors_ids))
 
     def get_data_by_stations_ids(self, station_ids, param_code):
+        """
+        Selects station data by station id and param code. Returns with station name.
+
+        :type station_ids: Union[list, set]
+        :type param_code: str
+        :rtype: list
+        """
         placeholders = self.generate_placeholders(len(station_ids))
         sql = f"SELECT st.name, d.date, d.value FROM data d LEFT JOIN sensors s ON " \
               f"s.id = d.sensor_id INNER JOIN stations st on st.id = s.station_id WHERE " \
@@ -231,11 +276,19 @@ class DbManager:
         return self.run_sql_select(sql, tuple(station_ids) + (param_code,))
 
     def get_sensors_by_stations_ids_sensor_code(self, station_ids, param_code):
+        """
+        Gets all sensors for specified stations id and sensor's param code ex. CO, NO2
+
+        :type station_ids: Union[list, set]
+        :type param_code: str
+        :rtype: list
+        """
         placeholders = self.generate_placeholders(len(station_ids))
         sql = f"SELECT s.id FROM sensors s INNER JOIN stations st on s.station_id = st.id " \
               f"WHERE st.id IN ({placeholders}) AND s.param = ?"
         return self.run_sql_select(sql, tuple(station_ids) + (param_code,))
 
     def delete_cache(self):
+        """Deletes all cache (request_history)"""
         sql = "DELETE FROM request_history"
         self.run_sql(sql)

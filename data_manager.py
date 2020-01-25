@@ -133,7 +133,7 @@ class DataManager:
 
         if get_results:
             try:
-                sensors = self.db.get_sensor_by_station_id(station_id)
+                sensors = self.db.get_sensors_by_station_id(station_id)
             except DbManagerError as e:
                 logger.exception(e)
                 raise DataManagerError("Error when obtaining data from db") from e

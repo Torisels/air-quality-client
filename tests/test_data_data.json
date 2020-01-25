@@ -3,4 +3,6 @@
 {"key":"PM10","values":[{"date":"2020-01-22 12:00:00","value":"abcdredsdafas"},{"date":"2020-01-22 11:00:00","value":31.1137}]},
 {"key":"PM10","values":[{"date":"2020-01-22","value":"123"},{"date":"2020-01-22 11:00:00","value":31.1137}]},
 {"values":[{"date":"2020-01-22","value":"123"},{"date":"2020-01-22 11:00:00","value":31.1137}]}
-]}
+],
+
+"test_parse_stations":[{"id":114,"stationName":"Wrocław - Bartnicza","gegrLat":"51.115933","gegrLon":"17.141125","city":{"id":1064,"name":"Wrocław","commune":{"communeName":"Wrocław","districtName":"Wrocław","provinceName":"DOLNOŚLĄSKIE"}},"addressStreet":"ul. Bartnicza"}]}

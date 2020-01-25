@@ -25,7 +25,10 @@ class UiMainWindow:
         self.logger = logger
 
     def setup_ui(self, main_window):
-        """Generates UI"""
+        """
+        Generates UI
+        :type main_window: QMainWindow
+        """
         main_window.setObjectName("MainWindow")
         main_window.resize(1000, 713)
 
@@ -138,7 +141,10 @@ class UiMainWindow:
         QtCore.QMetaObject.connectSlotsByName(main_window)
 
     def re_translate_ui(self, main_window):
-        """Adds all labels for items"""
+        """
+        Adds all labels for items
+        :type main_window: QMainWindow
+        """
         _t = QtCore.QCoreApplication.translate
         main_window.setWindowTitle(_t("MainWindow", "Klient jakości powietrza"))
         item = self.tableWidget.horizontalHeaderItem(0)
@@ -177,8 +183,14 @@ class UiMainWindow:
         self.push_button_deselect_all.setText(_t("MainWindow", "Odznacz wszystko"))
 
     @staticmethod
-    def add_checkbox_to_table(table: QTableWidget, row, col, checked=False):
-        """Adds checkboxes to given table by row, col"""
+    def add_checkbox_to_table(table, row, col, checked=False):
+        """
+        Adds checkboxes to given table by row, col
+        :type table: QTableWidget
+        :type row: int
+        :type col: int
+        :type checked: Bool
+        """
         check_box_item = QtWidgets.QTableWidgetItem()
         check_box_item.setFlags(QtCore.Qt.ItemIsUserCheckable | QtCore.Qt.ItemIsEnabled)
         if checked:
@@ -209,7 +221,10 @@ class UiMainWindow:
         self.push_button_download_specific_data.setEnabled(enable)
 
     def toggle_all_checkboxes(self, select=True):
-        """Callback method for selecting all checkboxes."""
+        """
+        Callback method for selecting all checkboxes.
+        :type select: Bool
+        """
 
         if self.mode == self.MODE_STATION:
             for row in range(self.params_widget.rowCount()):
@@ -231,7 +246,7 @@ class UiMainWindow:
         """
         Download data callback. Gets data from API/Db
 
-        :param draw_graph: Bool
+        :type draw_graph: Bool
         """
         if self.mode == self.MODE_STATION:
             sensors = self.selected_sensors[self.current_station]
@@ -278,7 +293,7 @@ class UiMainWindow:
     def handle_table_item_clicked(self, item):
         """
         Callback for main table item clicked
-        :param item: QWidgetItem
+        :type item: QWidgetItem
         """
         item_row = item.row()
         station_id = int(self.tableWidget.item(item_row, 7).text())
@@ -301,7 +316,7 @@ class UiMainWindow:
     def generate_sensor_table_view(self, data):
         """
         Generates sensor table view from given data
-        :param data: list
+        :type data: list
         """
         self.params_widget.setRowCount(len(data))
         for row, sensor in enumerate(data):
@@ -319,7 +334,7 @@ class UiMainWindow:
     def handle_sensor_table_item_clicked(self, item):
         """
         Handles click event for sensor table widget.
-        :param item: QCheckBox
+        :type item: QCheckBox
         """
         if self.mode == self.MODE_STATION:
             sensor_id = int(self.params_widget.item(item.row(), 3).text())
@@ -392,7 +407,7 @@ class UiMainWindow:
     def show_exception_box(exception_message):
         """
         Show message box with exception info.
-        :param exception_message: Exception
+        :type exception_message: Exception
         """
         msg = QMessageBox()
         msg.setWindowTitle("Błąd!")
